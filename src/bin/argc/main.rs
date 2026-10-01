@@ -174,6 +174,26 @@ fn run() -> Result<i32> {
                 let value = argc::export(&source, &cmd_args[0])?;
                 println!("{}", serde_json::to_string_pretty(&value)?);
             }
+            "--argc-check" => {
+                let script_file = match args.get(2) {
+                    Some(v) => normalize_script_path(v),
+                    None => {
+                        let (_, script_file) =
+                            get_script_path(true).ok_or_else(|| anyhow!("Argcfile not found."))?;
+                        script_file.display().to_string()
+                    }
+                };
+                let source = fs::read_to_string(&script_file)
+                    .with_context(|| format!("Failed to load script at '{script_file}'"))?;
+                let mut code = 0;
+                for diagnostic in argc::check(&source) {
+                    eprintln!("{script_file}:{diagnostic}");
+                    if diagnostic.severity == argc::Severity::Error {
+                        code = 1;
+                    }
+                }
+                return Ok(code);
+            }
             "--argc-parallel" => {
                 if args.len() <= 3 {
                     bail!("Usage: argc --argc-parallel <SCRIPT> <ARGS>...");

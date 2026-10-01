@@ -6,6 +6,7 @@
 # @option --argc-completions <SHELL> <CMDS>         Generate shell completion scripts
 # @option --argc-compgen <SHELL> <FILE> <ARGS>      Generate completion candidates
 # @option --argc-export <FILE>                      Export command line definitions as json
+# @option --argc-check <FILE?>                      Lint an argc-based script
 # @option --argc-parallel~ <FILE> <ARGS>            Run functions in parallel
 # @flag --argc-script-path                          Print current argcfile path
 # @flag --argc-shell-path                           Print current shell path

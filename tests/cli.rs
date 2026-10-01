@@ -301,3 +301,56 @@ fn run_argcfile() {
         .stdout(predicates::str::contains("dir1/subdir1/Argcfile.sh"))
         .success();
 }
+
+#[test]
+fn check() {
+    let tmpdir = tmpdir();
+    let script_path = tmpdir.join("script.sh");
+    std::fs::write(
+        &script_path,
+        r#"set -e
+# @meta require-tool git
+# @cmd
+a() { :; }
+# @cmd
+b() { a && echo ok; }
+eval "$(argc --argc-eval "$0" "$@")"
+"#,
+    )
+    .unwrap();
+    let path = script_path.display().to_string();
+    argc_bin()
+        .arg("--argc-check")
+        .arg(&script_path)
+        .assert()
+        .stdout("")
+        .stderr(format!(
+            "{path}:2: warning: unknown @meta key `require-tool`, did you mean `require-tools`?\n\
+             {path}:6: warning: errexit is ignored inside `a` when it is called from `&&`, `||`, `if`, `while` or `!`; run it as `argc a` instead\n"
+        ))
+        .success();
+
+    std::fs::write(&script_path, "# @baz\n").unwrap();
+    argc_bin()
+        .arg("--argc-check")
+        .arg(&script_path)
+        .assert()
+        .stdout("")
+        .stderr(format!(
+            "{path}:1: error: @baz is unknown tag\n\
+             {path}:1: warning: missing `eval \"$(argc --argc-eval \"$0\" \"$@\")\"`\n"
+        ))
+        .code(1);
+}
+
+#[test]
+fn check_argcfile() {
+    let tmpdir = tmpdir_argcfiles();
+    argc_bin()
+        .current_dir(tmpdir_path(&tmpdir, "dir1/subdir1/subdirdir1"))
+        .arg("--argc-check")
+        .assert()
+        .stdout("")
+        .stderr("")
+        .success();
+}

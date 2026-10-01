@@ -440,6 +440,9 @@ impl<'a: 'b, 'b, T: Runtime> Matcher<'a, 'b, T> {
                 self.positional_args.iter().map(|v| v.to_string()).collect(),
             ));
         }
+        if let Some(version) = self.cmds[0].meta_require_bash() {
+            output.push(ArgcValue::RequireBash(version));
+        }
         if !last_cmd.require_tools.is_empty() {
             output.push(ArgcValue::RequireTools(
                 last_cmd.require_tools.iter().cloned().collect(),

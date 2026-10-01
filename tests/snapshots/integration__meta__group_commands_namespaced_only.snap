@@ -1,0 +1,24 @@
+---
+source: tests/meta.rs
+expression: data
+---
+RUN
+prog -h
+
+# OUTPUT
+command cat >&2 <<-'EOF' 
+USAGE: prog <COMMAND>
+
+DB COMMANDS:
+  db:migrate
+  db:seed
+
+EOF
+exit 0
+
+# BUILD_OUTPUT
+USAGE: prog <COMMAND>
+
+DB COMMANDS:
+  db:migrate
+  db:seed

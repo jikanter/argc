@@ -2,8 +2,8 @@ use indexmap::IndexMap;
 
 #[cfg(feature = "eval-bash")]
 use crate::utils::{
-    argc_var_name, escape_shell_words, AFTER_HOOK, ARGC_LOAD_DOTENV, ARGC_REQUIRE_TOOLS,
-    BEFORE_HOOK, VARIABLE_PREFIX,
+    argc_var_name, escape_shell_words, AFTER_HOOK, ARGC_LOAD_DOTENV, ARGC_REQUIRE_BASH,
+    ARGC_REQUIRE_TOOLS, BEFORE_HOOK, VARIABLE_PREFIX,
 };
 
 #[derive(Debug, PartialEq, Eq)]
@@ -21,6 +21,7 @@ pub enum ArgcValue {
     Hook((bool, bool)),
     Dotenv(String),
     RequireTools(Vec<String>),
+    RequireBash(String),
     CommandFn(String),
     ParamFn(String),
     ExternalSubcommand(String, Vec<String>, usize),
@@ -35,6 +36,7 @@ impl ArgcValue {
         let mut exit = false;
         let mut positional_args = vec![];
         let mut require_tools = vec![];
+        let mut require_bash = None;
         let mut exist_external_subcommand = false;
         let (mut before_hook, mut after_hook) = (false, false);
         for value in values {
@@ -118,6 +120,9 @@ impl ArgcValue {
                 ArgcValue::RequireTools(tools) => {
                     require_tools = tools.to_vec();
                 }
+                ArgcValue::RequireBash(version) => {
+                    require_bash = Some(version);
+                }
                 ArgcValue::CommandFn(name) => {
                     if positional_args.is_empty() {
                         last = name.to_string();
@@ -190,6 +195,16 @@ impl ArgcValue {
         }
         if exit {
             list.push("exit".to_string());
+        }
+        if let Some(version) = require_bash {
+            // Must run before anything else, the rest may rely on newer bash features
+            list.insert(
+                0,
+                format!(
+                    "{ARGC_REQUIRE_BASH}\n_argc_require_bash {}\n",
+                    escape_shell_words(version)
+                ),
+            );
         }
         list.join("\n")
     }

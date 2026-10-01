@@ -6,6 +6,7 @@ expression: data
 src\argc_value.rs	1	argc_value.rs		39
 src\bin\	0	bin\		1;34
 src\build.rs	1	build.rs		39
+src\check.rs	1	check.rs		39
 src\command\	0	command\		1;34
 src\compgen.rs	1	compgen.rs		39
 src\completions\	0	completions\		1;34
@@ -27,6 +28,7 @@ src\parser.rs	1	parser.rs		39
 .\src\argc_value.rs	1	argc_value.rs		39
 .\src\bin\	0	bin\		1;34
 .\src\build.rs	1	build.rs		39
+.\src\check.rs	1	check.rs		39
 .\src\command\	0	command\		1;34
 .\src\compgen.rs	1	compgen.rs		39
 .\src\completions\	0	completions\		1;34

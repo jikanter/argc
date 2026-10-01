@@ -1,6 +1,8 @@
 mod argc_value;
 #[cfg(feature = "build")]
 mod build;
+#[cfg(feature = "check")]
+mod check;
 mod command;
 #[cfg(feature = "compgen")]
 mod compgen;
@@ -21,6 +23,8 @@ use anyhow::Result;
 pub use argc_value::ArgcValue;
 #[cfg(feature = "build")]
 pub use build::build;
+#[cfg(feature = "check")]
+pub use check::{check, Diagnostic, Severity};
 #[cfg(feature = "export")]
 pub use command::CommandValue;
 #[cfg(feature = "compgen")]

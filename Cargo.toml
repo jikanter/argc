@@ -1,6 +1,6 @@
 [package]
 name = "argc"
-version = "1.24.0-jk1"
+version = "1.24.0-jk2"
 edition = "2021"
 authors = ["sigoden <sigoden@gmail.com>"]
 description = "A bash cli framework, also a bash-based command runner"
@@ -23,6 +23,7 @@ application = [
     "completions",
     "compgen",
     "export",
+    "check",
     "wrap-help",
 
     # deps
@@ -39,6 +40,7 @@ mangen = ["roff"]
 completions = []
 compgen = ["dirs", "natord"]
 export = ["serde_json", "indexmap/serde"]
+check = []
 wrap-help = ["textwrap"]
 
 [dependencies]

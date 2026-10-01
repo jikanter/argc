@@ -1,7 +1,10 @@
 use crate::{
     command::Command,
     param::{FlagOptionParam, Param, PositionalParam},
-    utils::{escape_shell_words, ARGC_LOAD_DOTENV, ARGC_REQUIRE_PARAMS, ARGC_REQUIRE_TOOLS},
+    utils::{
+        escape_shell_words, ARGC_LOAD_DOTENV, ARGC_REQUIRE_BASH, ARGC_REQUIRE_PARAMS,
+        ARGC_REQUIRE_TOOLS,
+    },
     ChoiceValue, DefaultValue,
 };
 use anyhow::Result;
@@ -81,6 +84,12 @@ fn build_root(cmd: &Command, wrap_width: Option<usize>) -> String {
     } else {
         String::new()
     };
+    let require_bash = if let Some(version) = cmd.meta_require_bash() {
+        util_fns.push_str(&format!("\n{ARGC_REQUIRE_BASH}\n"));
+        format!("\n    _argc_require_bash {version}")
+    } else {
+        String::new()
+    };
     if command.contains("_argc_required_flag_options") || command.contains("_argc_required_envs") {
         util_fns.push_str(&format!("\n{ARGC_REQUIRE_PARAMS}\n"));
     }
@@ -123,7 +132,7 @@ _argc_run() {{
     _argc_required_flag_options=()
     _argc_required_envs=()
     _argc_tools=()
-    _argc_parse{require_flag_options}{require_envs}{require_tools}{before_hook}
+    _argc_parse{require_bash}{require_flag_options}{require_envs}{require_tools}{before_hook}
     if [ -n "${{argc__fn:-}}" ]; then
         $argc__fn "${{argc__positionals[@]}}"{after_hook}
     fi

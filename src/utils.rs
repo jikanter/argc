@@ -16,11 +16,16 @@ pub(crate) const META_COMBINE_SHORTS: &str = "combine-shorts";
 pub(crate) const META_EXTERNAL_SUBCOMMANDS: &str = "external-subcommands";
 pub(crate) const META_MAN_SECTION: &str = "man-section";
 pub(crate) const META_REQUIRE_TOOLS: &str = "require-tools";
+pub(crate) const META_REQUIRE_BASH: &str = "require-bash";
+pub(crate) const META_GROUP_COMMANDS: &str = "group-commands";
 
 pub(crate) const MAX_ARGS: usize = 32767;
 
 #[cfg(any(feature = "build", feature = "eval-bash"))]
 pub const ARGC_REQUIRE_TOOLS: &str = include_str!("template/require_tools.sh");
+
+#[cfg(any(feature = "build", feature = "eval-bash"))]
+pub const ARGC_REQUIRE_BASH: &str = include_str!("template/require_bash.sh");
 
 #[cfg(any(feature = "build", feature = "eval-bash"))]
 pub const ARGC_REQUIRE_PARAMS: &str = include_str!("template/require_params.sh");
@@ -90,6 +95,27 @@ pub fn is_true_value(value: &str) -> bool {
     matches!(value, "true" | "1")
 }
 
+/// Parse a `major[.minor[.patch]]` bash version, returning it normalized
+pub(crate) fn parse_bash_version(value: &str) -> Option<String> {
+    let parts: Vec<&str> = value.split('.').collect();
+    if parts.len() > 3 {
+        return None;
+    }
+    let mut numbers = vec![];
+    for (i, part) in parts.iter().enumerate() {
+        if part.is_empty() || !part.chars().all(|c| c.is_ascii_digit()) {
+            return None;
+        }
+        let number: u32 = part.parse().ok()?;
+        // The generated check packs minor and patch into three digits each
+        if i > 0 && number > 999 {
+            return None;
+        }
+        numbers.push(number.to_string());
+    }
+    Some(numbers.join("."))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -99,5 +125,17 @@ mod tests {
         assert_eq!("FOO-BAR".to_string(), to_cobol_case("fooBar"));
         assert_eq!("FOO-BAR".to_string(), to_cobol_case("foo-bar"));
         assert_eq!("FOO1".to_string(), to_cobol_case("foo1"));
+    }
+
+    #[test]
+    fn test_parse_bash_version() {
+        assert_eq!(parse_bash_version("4"), Some("4".to_string()));
+        assert_eq!(parse_bash_version("4.4"), Some("4.4".to_string()));
+        assert_eq!(parse_bash_version("5.02.1"), Some("5.2.1".to_string()));
+        assert_eq!(parse_bash_version(""), None);
+        assert_eq!(parse_bash_version("4."), None);
+        assert_eq!(parse_bash_version("v4"), None);
+        assert_eq!(parse_bash_version("4.4.1.1"), None);
+        assert_eq!(parse_bash_version("4.1000"), None);
     }
 }

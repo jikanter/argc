@@ -1,0 +1,32 @@
+---
+source: tests/meta.rs
+expression: data
+---
+RUN
+prog -h
+
+# OUTPUT
+command cat >&2 <<-'EOF' 
+USAGE: prog <COMMAND>
+
+COMMANDS:
+  build              Build the project
+  ace:deploy         Deploy ace
+  ace@install_tools  Install tools [aliases: ace@install-tools, ace@tools]
+  docs.lint          Lint docs
+  ace.lint           Lint ace
+  run_tests          Run tests [aliases: run-tests, t]
+
+EOF
+exit 0
+
+# BUILD_OUTPUT
+USAGE: prog <COMMAND>
+
+COMMANDS:
+  build              Build the project
+  ace:deploy         Deploy ace
+  ace@install_tools  Install tools [aliases: ace@install-tools, ace@tools]
+  docs.lint          Lint docs
+  ace.lint           Lint ace
+  run_tests          Run tests [aliases: run-tests, t]
