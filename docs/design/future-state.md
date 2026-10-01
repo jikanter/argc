@@ -261,7 +261,7 @@ Changes carry snapshot tests in the existing `tests/` layout
   or `require-bash` still runs on stock argc; it just shows flat help and
   skips the version guard. That is a soft downgrade, not a failure. Note
   that the `argc` currently on `PATH` here reports `1.24.0`, not
-  `1.24.0-jk1`, so the fork build is not the one in use yet.
+  a `-jk` fork version, so the fork build is not the one in use yet.
 - **The errexit warning is a heuristic.** It reads lines, not a bash syntax
   tree, so multi-line conditions and calls built from variables are missed.
 - **Why the `ns@name` function plus `ns:name` alias pattern?** Bash accepts
