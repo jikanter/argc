@@ -1,0 +1,62 @@
+---
+source: tests/meta.rs
+expression: data
+---
+************ RUN ************
+prog foo
+
+# OUTPUT
+_argc_require_bash() {
+    local major minor patch required current
+    IFS=. read -r major minor patch <<<"$1"
+    required=$((major * 1000000 + ${minor:-0} * 1000 + ${patch:-0}))
+    current=$((BASH_VERSINFO[0] * 1000000 + BASH_VERSINFO[1] * 1000 + BASH_VERSINFO[2]))
+    if [ "$current" -lt "$required" ]; then
+        echo "error: bash $1+ is required, found $BASH_VERSION" >&2
+        exit 1
+    fi
+}
+
+_argc_require_bash 3.0
+
+argc__args=( prog foo )
+argc__fn=foo
+argc__positionals=(  )
+foo
+
+# RUN_OUTPUT
+argc__args=([0]="prog" [1]="foo")
+argc__fn=foo
+argc__positionals=()
+foo
+
+************ RUN ************
+prog -h
+
+# OUTPUT
+command cat >&2 <<-'EOF' 
+USAGE: prog <COMMAND>
+
+COMMANDS:
+  foo
+
+EOF
+exit 0
+
+# RUN_OUTPUT
+USAGE: prog <COMMAND>
+
+COMMANDS:
+  foo
+
+************ RUN ************
+prog --version
+
+# OUTPUT
+command cat >&2 <<-'EOF' 
+prog 0.0.0
+EOF
+exit 0
+
+# RUN_OUTPUT
+prog 0.0.0

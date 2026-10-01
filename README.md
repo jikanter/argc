@@ -151,6 +151,16 @@ argc --argc-build ./example.sh build/
 ./build/example.sh -h     # The script's functionality does not require the `argc` dependency
 ```
 
+## Argc-check
+
+Lint an argc-based script. Diagnostics are printed as `<path>:<line>: <error|warning>: <message>`; the exit code is 1 if there is any error.
+
+```
+argc --argc-check [SCRIPT]
+```
+
+Without a script, it checks the `Argcfile.sh` that `argc` would run. Besides tag errors, it warns about unknown `@meta` keys, `@env` names that are not valid shell variable names, and `set -e` being silently ignored when a recipe function is called from `&&`, `||`, `if`, `while` or `!`.
+
 ## Argcscript
 
 Argc is a also command runner built for those who love the efficiency and flexibility of Bash scripting.

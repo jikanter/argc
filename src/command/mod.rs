@@ -13,9 +13,9 @@ use crate::param::{EnvValue, FlagOptionValue, PositionalValue};
 use crate::parser::{parse, parse_symbol, Event, EventData, EventScope, Position};
 use crate::runtime::Runtime;
 use crate::utils::{
-    AFTER_HOOK, BEFORE_HOOK, MAIN_NAME, META_BINNAME, META_COMBINE_SHORTS, META_DEFAULT_SUBCOMMAND,
-    META_DOTENV, META_INHERIT_FLAG_OPTIONS, META_REQUIRE_TOOLS, META_SYMBOL, META_VERSION,
-    ROOT_NAME,
+    parse_bash_version, AFTER_HOOK, BEFORE_HOOK, MAIN_NAME, META_BINNAME, META_COMBINE_SHORTS,
+    META_DEFAULT_SUBCOMMAND, META_DOTENV, META_GROUP_COMMANDS, META_INHERIT_FLAG_OPTIONS,
+    META_REQUIRE_BASH, META_REQUIRE_TOOLS, META_SYMBOL, META_VERSION, ROOT_NAME,
 };
 use crate::Result;
 
@@ -198,6 +198,13 @@ impl Command {
                                 cmd.version = Some(value.clone());
                             }
                         }
+                        META_REQUIRE_BASH if parse_bash_version(&value).is_none() => {
+                            bail!(
+                                "@meta(line {}) invalid require-bash value `{}`, expected major[.minor[.patch]]",
+                                position,
+                                value
+                            )
+                        }
                         _ => {}
                     }
                     cmd.metadata.push((key, value, position));
@@ -371,6 +378,12 @@ impl Command {
         }
     }
 
+    #[cfg(any(feature = "build", feature = "eval"))]
+    pub(crate) fn meta_require_bash(&self) -> Option<String> {
+        self.get_metadata(META_REQUIRE_BASH)
+            .and_then(parse_bash_version)
+    }
+
     pub(crate) fn flag_option_signs(&self) -> IndexSet<char> {
         let mut signs: IndexSet<char> = ['-'].into();
         for param in &self.flag_option_params {
@@ -498,18 +511,11 @@ impl Command {
         self.paths.clone_from(&paths);
 
         // auto alias if command name contains `_`
-        if let Some(name) = self.name.clone() {
-            let compatible_name = if !name.starts_with('_') {
-                name.replace("_", "-")
-            } else {
-                name.clone()
-            };
-            if compatible_name != name {
-                match self.aliases.as_mut() {
-                    Some((aliases, _)) => aliases.insert(0, compatible_name),
-                    None => {
-                        self.aliases = Some((vec![compatible_name], Position::default()));
-                    }
+        if let Some(compatible_name) = self.auto_alias() {
+            match self.aliases.as_mut() {
+                Some((aliases, _)) => aliases.insert(0, compatible_name),
+                None => {
+                    self.aliases = Some((vec![compatible_name], Position::default()));
                 }
             }
         }
@@ -587,6 +593,20 @@ impl Command {
             let mut parents = paths.clone();
             parents.push(subcmd.name.clone().unwrap_or_default());
             subcmd.update_recursively(parents, self.require_tools.clone());
+        }
+    }
+
+    /// The alias argc generates itself for a command name containing `_`
+    fn auto_alias(&self) -> Option<String> {
+        let name = self.name.as_ref()?;
+        if name.starts_with('_') {
+            return None;
+        }
+        let compatible_name = name.replace("_", "-");
+        if compatible_name != *name {
+            Some(compatible_name)
+        } else {
+            None
         }
     }
 
@@ -848,6 +868,9 @@ impl Command {
         if self.subcommands.is_empty() {
             return output;
         }
+        if self.is_root() && self.has_metadata(META_GROUP_COMMANDS) {
+            return self.render_grouped_subcommands(wrap_width);
+        }
         let mut value_size = 0;
         let list: Vec<_> = self
             .subcommands
@@ -855,12 +878,43 @@ impl Command {
             .map(|subcmd| {
                 let value = subcmd.cmd_name();
                 value_size = value_size.max(value.len());
-                (value, subcmd.render_subcommand_describe())
+                (value, subcmd.render_subcommand_describe(false))
             })
             .collect();
         value_size += 2;
         output.push("COMMANDS:".to_string());
         render_list(&mut output, list, value_size, wrap_width);
+        output
+    }
+
+    // Group subcommands by the namespace before the first `:`, `.` or `@` in their names
+    fn render_grouped_subcommands(&self, wrap_width: Option<usize>) -> Vec<String> {
+        let mut output = vec![];
+        let mut value_size = 0;
+        let mut groups: IndexMap<String, Vec<(String, String)>> = IndexMap::new();
+        groups.insert(String::new(), vec![]);
+        for subcmd in self.subcommands.iter() {
+            let value = subcmd.cmd_name();
+            value_size = value_size.max(value.len());
+            let namespace = match value.split_once([':', '.', '@']) {
+                Some((namespace, _)) => namespace.to_uppercase(),
+                None => String::new(),
+            };
+            let describe = subcmd.render_subcommand_describe(true);
+            groups.entry(namespace).or_default().push((value, describe));
+        }
+        value_size += 2;
+        for (namespace, list) in groups {
+            if list.is_empty() {
+                continue;
+            }
+            if namespace.is_empty() {
+                output.push("COMMANDS:".to_string());
+            } else {
+                output.push(format!("{namespace} COMMANDS:"));
+            }
+            render_list(&mut output, list, value_size, wrap_width);
+        }
         output
     }
 
@@ -884,13 +938,24 @@ impl Command {
         output
     }
 
-    fn render_subcommand_describe(&self) -> String {
+    fn render_subcommand_describe(&self, hide_auto_alias: bool) -> String {
         let mut output = self.describe_oneline().to_string();
         if let Some((aliases, _)) = &self.aliases {
-            if !output.is_empty() {
-                output.push(' ')
+            let mut aliases = aliases.clone();
+            if hide_auto_alias {
+                if let Some(auto_alias) = self.auto_alias() {
+                    // The auto alias is always inserted first
+                    if aliases.first() == Some(&auto_alias) {
+                        aliases.remove(0);
+                    }
+                }
             }
-            output.push_str(&format!("[aliases: {}]", aliases.join(", ")));
+            if !aliases.is_empty() {
+                if !output.is_empty() {
+                    output.push(' ')
+                }
+                output.push_str(&format!("[aliases: {}]", aliases.join(", ")));
+            }
         }
         if self.has_metadata(META_DEFAULT_SUBCOMMAND) {
             if !output.is_empty() {

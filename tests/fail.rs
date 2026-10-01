@@ -215,3 +215,15 @@ fn invalid_envs() {
         "@env(line 2) is invalid, can only be a single value"
     );
 }
+
+#[test]
+fn invalid_require_bash() {
+    let script = r###"
+# @meta require-bash 4.x
+    "###;
+    fail!(
+        script,
+        &["prog"],
+        "@meta(line 2) invalid require-bash value `4.x`, expected major[.minor[.patch]]"
+    );
+}

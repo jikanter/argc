@@ -10,6 +10,7 @@ pub use fixtures::locate_script;
 #[macro_use]
 mod macros;
 mod bind_env;
+mod check;
 mod cli;
 mod compgen;
 mod env;

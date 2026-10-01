@@ -1,0 +1,85 @@
+---
+source: tests/meta.rs
+expression: data
+---
+************ RUN ************
+prog -h
+
+# OUTPUT
+command cat >&2 <<-'EOF' 
+USAGE: prog <COMMAND>
+
+COMMANDS:
+  build              Build the project
+  run_tests          Run tests [aliases: t]
+
+ACE COMMANDS:
+  ace:deploy         Deploy ace
+  ace@install_tools  Install tools [aliases: ace@tools]
+  ace.lint           Lint ace
+
+DOCS COMMANDS:
+  docs.lint          Lint docs
+
+EOF
+exit 0
+
+# RUN_OUTPUT
+USAGE: prog <COMMAND>
+
+COMMANDS:
+  build              Build the project
+  run_tests          Run tests [aliases: t]
+
+ACE COMMANDS:
+  ace:deploy         Deploy ace
+  ace@install_tools  Install tools [aliases: ace@tools]
+  ace.lint           Lint ace
+
+DOCS COMMANDS:
+  docs.lint          Lint docs
+
+************ RUN ************
+prog ace@install-tools
+
+# OUTPUT
+argc__args=( prog ace@install-tools )
+argc__fn=ace@install_tools
+argc__positionals=(  )
+ace@install_tools
+
+# RUN_OUTPUT
+argc__args=([0]="prog" [1]="ace@install-tools")
+argc__fn=ace@install_tools
+argc__positionals=()
+ace@install_tools
+
+************ RUN ************
+prog ace@tools
+
+# OUTPUT
+argc__args=( prog ace@tools )
+argc__fn=ace@install_tools
+argc__positionals=(  )
+ace@install_tools
+
+# RUN_OUTPUT
+argc__args=([0]="prog" [1]="ace@tools")
+argc__fn=ace@install_tools
+argc__positionals=()
+ace@install_tools
+
+************ RUN ************
+prog run-tests
+
+# OUTPUT
+argc__args=( prog run-tests )
+argc__fn=run_tests
+argc__positionals=(  )
+run_tests
+
+# RUN_OUTPUT
+argc__args=([0]="prog" [1]="run-tests")
+argc__fn=run_tests
+argc__positionals=()
+run_tests

@@ -23,6 +23,7 @@ application = [
     "completions",
     "compgen",
     "export",
+    "check",
     "wrap-help",
 
     # deps
@@ -39,6 +40,7 @@ mangen = ["roff"]
 completions = []
 compgen = ["dirs", "natord"]
 export = ["serde_json", "indexmap/serde"]
+check = []
 wrap-help = ["textwrap"]
 
 [dependencies]

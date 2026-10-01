@@ -188,10 +188,13 @@ Sizes: XS under 50 lines, S under 200, M under 600, including tests.
 ### B4. Bash version guard: `@meta require-bash <version>` (XS)
 
 - **Evidence:** the hand-written 4.4 gate; macOS `/bin/bash` is 3.2.
-- **Semantics:** compare against `BASH_VERSINFO` before anything else runs;
-  on failure print the found and required versions and exit. The check
-  itself is valid bash 3.2. Emitted the same way in eval and build output,
-  alongside `require-tools`.
+- **Semantics:** compare against `BASH_VERSINFO`; on failure print the found
+  and required versions and exit 1. The check itself is valid bash 3.2.
+  Like `require-tools`, it is skipped for `--help` and `--version`.
+- **Timing:** under `--argc-eval` it is the first statement of the generated
+  code. In an `--argc-build` script it runs right after argument parsing,
+  which is what lets `--help` still work on an old bash; the parsing code
+  itself is bash 3.2-compatible.
 
 ## 6. Deferred
 

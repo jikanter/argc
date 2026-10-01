@@ -6,6 +6,7 @@ expression: data
 argc_value.rs	1	argc_value.rs		default
 bin/	0	bin/		blue bold
 build.rs	1	build.rs		default
+check.rs	1	check.rs		default
 command/	0	command/		blue bold
 compgen.rs	1	compgen.rs		default
 completions/	0	completions/		blue bold
@@ -23,6 +24,7 @@ utils.rs	1	utils.rs		default
 --oa=argc_value.rs	1	argc_value.rs		default
 --oa=bin/	0	bin/		blue bold
 --oa=build.rs	1	build.rs		default
+--oa=check.rs	1	check.rs		default
 --oa=command/	0	command/		blue bold
 --oa=compgen.rs	1	compgen.rs		default
 --oa=completions/	0	completions/		blue bold
@@ -40,6 +42,7 @@ utils.rs	1	utils.rs		default
 argc_value.rs:	0	argc_value.rs:		default
 bin/	0	bin/		blue bold
 build.rs:	0	build.rs:		default
+check.rs:	0	check.rs:		default
 command/	0	command/		blue bold
 compgen.rs:	0	compgen.rs:		default
 completions/	0	completions/		blue bold
@@ -57,6 +60,7 @@ utils.rs:	0	utils.rs:		default
 foo=argc_value.rs	1	argc_value.rs		default
 foo=bin/	0	bin/		blue bold
 foo=build.rs	1	build.rs		default
+foo=check.rs	1	check.rs		default
 foo=command/	0	command/		blue bold
 foo=compgen.rs	1	compgen.rs		default
 foo=completions/	0	completions/		blue bold

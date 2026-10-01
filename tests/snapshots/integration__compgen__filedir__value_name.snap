@@ -6,6 +6,7 @@ expression: data
 src/argc_value.rs	1	argc_value.rs		default
 src/bin/	0	bin/		blue bold
 src/build.rs	1	build.rs		default
+src/check.rs	1	check.rs		default
 src/command/	0	command/		blue bold
 src/compgen.rs	1	compgen.rs		default
 src/completions/	0	completions/		blue bold
@@ -27,6 +28,7 @@ src/parser.rs	1	parser.rs		default
 ./src/argc_value.rs	1	argc_value.rs		default
 ./src/bin/	0	bin/		blue bold
 ./src/build.rs	1	build.rs		default
+./src/check.rs	1	check.rs		default
 ./src/command/	0	command/		blue bold
 ./src/compgen.rs	1	compgen.rs		default
 ./src/completions/	0	completions/		blue bold
