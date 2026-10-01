@@ -39,13 +39,17 @@ A recipe is a regular shell function with a `@cmd` comment tag above it.
 
 ## Handle dependencies
 
-Since recipe are functions, manage dependencies by calling them sequentially within other functions.
+To run one recipe from another, run it with `argc`, the same way you would on the command line.
 
 ```sh
+set -e
+
 # @cmd
-current() { before;
+current() {
+  argc before
   echo current
-after; }
+  argc after
+}
 
 # @cmd
 before() {
@@ -53,12 +57,10 @@ before() {
 }
 
 # @cmd
-after() { 
+after() {
   echo after
 }
 ```
-
-This example demonstrates how the `current` recipe calls both `before` and `after` recipes.
 
 ```
 $ argc current
@@ -66,6 +68,41 @@ before
 current
 after
 ```
+
+Each recipe runs in its own process, so it gets a real exit status, its own argument defaults and its own `@env` validation. With `set -e`, `current` stops as soon as `before` fails. Without `set -e`, chain the calls: `argc before && echo current && argc after`.
+
+In a script that is not an Argcfile, use `"$0" before` instead of `argc before`.
+
+### Why not call the function directly?
+
+Recipes are functions, so `before` on a line of its own also works. The trap is calling a recipe function where bash is testing its result:
+
+```sh
+set -e
+
+# @cmd
+build() {
+  echo compiling
+  false                 # the step that fails
+  echo "build finished" # should not be reached
+}
+
+# @cmd
+release() {
+  build && echo "releasing"
+}
+```
+
+```
+$ argc release
+compiling
+build finished
+releasing
+```
+
+Bash ignores `set -e` inside any function called from an `&&` or `||` list, from an `if`, `while` or `until` condition, or after `!`. The failure inside `build` is skipped and `release` carries on. Writing `argc build && echo "releasing"` gives the expected result, because `build` then runs as its own process and fails as a whole.
+
+`argc --argc-check` warns about recipe functions called this way.
 
 ## Organize Recipes
 
