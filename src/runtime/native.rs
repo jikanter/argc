@@ -29,17 +29,14 @@ impl Runtime for NativeRuntime {
         if self.exist_path(bash_path) {
             return Some(bash_path.into());
         }
-        let git_path = self.which("git")?;
-        let git_parent_path = self.parent_path(&git_path)?;
-        let bash_path = self.join_path(&self.parent_path(&git_parent_path)?, &["bin", "bash.exe"]);
-        if self.exist_path(&bash_path) {
-            return Some(bash_path);
-        }
-        let bash_path = self.join_path(&git_parent_path, &["bash.exe"]);
-        if self.exist_path(&bash_path) {
-            return Some(bash_path);
-        }
-        None
+        windows_bash_candidates(
+            self.which("git").as_deref(),
+            self.env_var("LOCALAPPDATA").as_deref(),
+            self.env_var("SCOOP").as_deref(),
+            self.env_var("USERPROFILE").as_deref(),
+        )
+        .into_iter()
+        .find(|path| self.exist_path(path))
     }
 
     #[cfg(not(windows))]
@@ -174,5 +171,127 @@ impl Runtime for NativeRuntime {
     fn read_to_string(&self, path: &str) -> Option<String> {
         let data = fs::read_to_string(path).ok()?;
         Some(data)
+    }
+}
+
+/// Candidate Git Bash locations on Windows, in lookup order, after the default
+/// `C:\Program Files\Git` install. Uses `\` string paths so it is testable on any OS.
+#[cfg_attr(not(windows), allow(dead_code))]
+fn windows_bash_candidates(
+    git_path: Option<&str>,
+    local_app_data: Option<&str>,
+    scoop: Option<&str>,
+    user_profile: Option<&str>,
+) -> Vec<String> {
+    fn parent(path: &str) -> Option<&str> {
+        path.trim_end_matches(['\\', '/'])
+            .rsplit_once(['\\', '/'])
+            .map(|(v, _)| v)
+    }
+    fn scoop_bash(root: &str) -> String {
+        format!("{root}\\apps\\git\\current\\bin\\bash.exe")
+    }
+    let mut candidates = vec![];
+    if let Some(git_parent) = git_path.and_then(parent) {
+        let git_root = parent(git_parent);
+        // Standard layout: <root>\cmd\git.exe -> <root>\bin\bash.exe
+        if let Some(git_root) = git_root {
+            candidates.push(format!("{git_root}\\bin\\bash.exe"));
+        }
+        candidates.push(format!("{git_parent}\\bash.exe"));
+        // Scoop shim: <scoop>\shims\git.exe -> <scoop>\apps\git\current\bin\bash.exe
+        let is_shim = git_parent
+            .rsplit(['\\', '/'])
+            .next()
+            .is_some_and(|v| v.eq_ignore_ascii_case("shims"));
+        if let (true, Some(scoop_root)) = (is_shim, git_root) {
+            candidates.push(scoop_bash(scoop_root));
+        }
+    }
+    // Per-user install from the official installer
+    if let Some(local_app_data) = local_app_data {
+        candidates.push(format!("{local_app_data}\\Programs\\Git\\bin\\bash.exe"));
+    }
+    match (scoop, user_profile) {
+        (Some(scoop), _) => candidates.push(scoop_bash(scoop)),
+        (None, Some(user_profile)) => {
+            candidates.push(scoop_bash(&format!("{user_profile}\\scoop")))
+        }
+        (None, None) => {}
+    }
+    let mut seen = std::collections::HashSet::new();
+    candidates.retain(|v| seen.insert(v.to_lowercase()));
+    candidates
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_windows_bash_candidates_standard() {
+        assert_eq!(
+            windows_bash_candidates(Some("D:\\Tools\\Git\\cmd\\git.exe"), None, None, None),
+            vec![
+                "D:\\Tools\\Git\\bin\\bash.exe",
+                "D:\\Tools\\Git\\cmd\\bash.exe"
+            ]
+        );
+    }
+
+    #[test]
+    fn test_windows_bash_candidates_per_user() {
+        let local = "C:\\Users\\me\\AppData\\Local";
+        assert_eq!(
+            windows_bash_candidates(None, Some(local), None, None),
+            vec!["C:\\Users\\me\\AppData\\Local\\Programs\\Git\\bin\\bash.exe"]
+        );
+        // git on PATH from the per-user install yields the same path once
+        let git = "C:\\Users\\me\\AppData\\Local\\Programs\\Git\\cmd\\git.exe";
+        assert_eq!(
+            windows_bash_candidates(Some(git), Some(local), None, None),
+            vec![
+                "C:\\Users\\me\\AppData\\Local\\Programs\\Git\\bin\\bash.exe",
+                "C:\\Users\\me\\AppData\\Local\\Programs\\Git\\cmd\\bash.exe",
+            ]
+        );
+    }
+
+    #[test]
+    fn test_windows_bash_candidates_scoop_shim() {
+        assert_eq!(
+            windows_bash_candidates(
+                Some("C:\\Users\\me\\scoop\\shims\\git.exe"),
+                None,
+                None,
+                Some("C:\\Users\\me")
+            ),
+            vec![
+                "C:\\Users\\me\\scoop\\bin\\bash.exe",
+                "C:\\Users\\me\\scoop\\shims\\bash.exe",
+                "C:\\Users\\me\\scoop\\apps\\git\\current\\bin\\bash.exe",
+            ]
+        );
+        // Global scoop install, matched case-insensitively
+        assert_eq!(
+            windows_bash_candidates(
+                Some("C:\\ProgramData\\scoop\\Shims\\git.exe"),
+                None,
+                None,
+                None
+            )
+            .last()
+            .unwrap(),
+            "C:\\ProgramData\\scoop\\apps\\git\\current\\bin\\bash.exe"
+        );
+    }
+
+    #[test]
+    fn test_windows_bash_candidates_scoop_env() {
+        assert_eq!(
+            windows_bash_candidates(None, None, Some("D:\\scoop"), Some("C:\\Users\\me")),
+            vec!["D:\\scoop\\apps\\git\\current\\bin\\bash.exe"]
+        );
+        assert!(windows_bash_candidates(None, None, None, None).is_empty());
     }
 }
